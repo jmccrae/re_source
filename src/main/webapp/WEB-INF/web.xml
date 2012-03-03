@@ -4,9 +4,17 @@
         <servlet-name>re_source</servlet-name>
         <servlet-class>eu.monnetproject.re_source.servlet.Re_SourceServlet</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>ontology</servlet-name>
+        <servlet-class>eu.monnetproject.re_source.servlet.OntologyServlet</servlet-class>
+    </servlet>
     <servlet-mapping>
         <servlet-name>re_source</servlet-name>
         <url-pattern>/resource/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ontology</servlet-name>
+        <url-pattern>/ontology</url-pattern>
     </servlet-mapping>
     <session-config>
         <session-timeout>

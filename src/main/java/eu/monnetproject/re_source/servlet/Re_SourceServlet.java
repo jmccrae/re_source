@@ -52,6 +52,7 @@ import javax.servlet.http.HttpServletResponse;
  * @author John McCrae
  */
 public class Re_SourceServlet extends HttpServlet {
+    public static final String DATA_PATH = "/WEB-INF/data";
 
     private final List<Converter> converters = new LinkedList<Converter>();
     private final List<RDFWriterBuilder> writers = new LinkedList<RDFWriterBuilder>();
@@ -124,10 +125,10 @@ public class Re_SourceServlet extends HttpServlet {
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         final String pathInfo = req.getPathInfo();
         if(pathInfo == null || pathInfo.equals("") || pathInfo.equals("/")) {
-            resp.sendError(HttpServletResponse.SC_FORBIDDEN);
+            resp.sendError(HttpServletResponse.SC_NOT_FOUND,"Re_source works, but there is no welcome page ;)");
             return;
         }
-        final URL resource = getServletContext().getResource("/WEB-INF/data" + req.getPathInfo());
+        final URL resource = getServletContext().getResource(DATA_PATH + req.getPathInfo());
         if (resource == null) {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
         } else {
