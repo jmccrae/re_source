@@ -24,58 +24,27 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************************/
-package eu.monnetproject.re_source.rdf;
+package eu.monnetproject.re_source;
 
+import eu.monnetproject.re_source.rdf.Resource;
+import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 
 /**
- * A URI node in the RDF graph
+ * Convert a resource to RDF
  * 
  * @author John McCrae
  */
-public final class URIRef extends Resource {
-    
-    private final URI uri;
-
-    
-    URIRef(URI uri) {
-        this.uri = uri;
-    }
-    
+public interface Converter {
     /**
-     * Get the URI
-     * @return The URI or null if the resource is a blank node
+     * Convert the resource to 
+     * @param url The URL of the physical resource 
+     * @param resourceURI The URI that the resource is to be published at
+     * @param servletPrefix The prefix for the server (for example for relating to the ontology)
+     * @throws SourceParseException If the resource exists but could not be parsed
+     * @throws IOException If the resource cannot be accessed
+     * @return The conversion as a resource, or null if the converter does not support this type of resource
      */
-    public URI getURI() {
-        return uri;
-    }
-
-    @Override
-    public String toString() {
-        return "<" + uri + ">";
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final URIRef other = (URIRef) obj;
-        if (this.uri != other.uri && (this.uri == null || !this.uri.equals(other.uri))) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 79 * hash + (this.uri != null ? this.uri.hashCode() : 0);
-        return hash;
-    }
-    
-    
+    Resource convert(URL url, URI resourceURI, String servletPrefix) throws SourceParseException, IOException;
 }

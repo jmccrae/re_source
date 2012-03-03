@@ -24,58 +24,39 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************************/
-package eu.monnetproject.re_source.rdf;
+package eu.monnetproject.re_source.servlet;
 
+import eu.monnetproject.re_source.Converter;
+import eu.monnetproject.re_source.SourceParseException;
+import eu.monnetproject.re_source.rdf.Resource;
+import eu.monnetproject.re_source.xml.RDFConverterImpl;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
+import javax.xml.parsers.ParserConfigurationException;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 /**
- * A URI node in the RDF graph
- * 
+ *
  * @author John McCrae
  */
-public final class URIRef extends Resource {
-    
-    private final URI uri;
-
-    
-    URIRef(URI uri) {
-        this.uri = uri;
-    }
-    
-    /**
-     * Get the URI
-     * @return The URI or null if the resource is a blank node
-     */
-    public URI getURI() {
-        return uri;
-    }
+public class DefaultConverter implements Converter {
 
     @Override
-    public String toString() {
-        return "<" + uri + ">";
+    public Resource convert(URL url, URI resourceUri, String servletPrefix) throws SourceParseException, IOException {
+        if(url.getFile().endsWith(".xml")) {
+            try {
+                return new RDFConverterImpl(new InputSource(url.openStream()), resourceUri, servletPrefix).toRDF();
+            } catch(ParserConfigurationException x) {
+                throw new RuntimeException(x);
+            } catch(SAXException x) {
+                throw new RuntimeException(x);
+            }
+        } else {
+            return null;
+        }
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final URIRef other = (URIRef) obj;
-        if (this.uri != other.uri && (this.uri == null || !this.uri.equals(other.uri))) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 79 * hash + (this.uri != null ? this.uri.hashCode() : 0);
-        return hash;
-    }
-    
-    
 }

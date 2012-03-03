@@ -26,56 +26,39 @@
  *********************************************************************************/
 package eu.monnetproject.re_source.rdf;
 
-import java.net.URI;
+import eu.monnetproject.re_source.rdf.html.HTMLWriter;
+import eu.monnetproject.re_source.rdf.turtle.TurtleWriter;
+import eu.monnetproject.re_source.rdf.xml.RDFXMLWriter;
 
 /**
- * A URI node in the RDF graph
+ * The standard RDF Writer Builder (supports RDF/XML, Turtle and XHTML+RDFa)
  * 
  * @author John McCrae
  */
-public final class URIRef extends Resource {
-    
-    private final URI uri;
+public class DefaultRDFWriterBuilder implements RDFWriterBuilder {
 
-    
-    URIRef(URI uri) {
-        this.uri = uri;
-    }
-    
-    /**
-     * Get the URI
-     * @return The URI or null if the resource is a blank node
-     */
-    public URI getURI() {
-        return uri;
+    @Override
+    public RDFWriter getWriter(String mimeType, String localURL) {
+        if(mimeType.equals("application/rdf+xml")) {
+            return new RDFXMLWriter();
+        } else if(mimeType.equals("text/turtle")) {
+            return new TurtleWriter();
+        } else if(mimeType.equals("application/xhtml+xml") || mimeType.equals("text/html")) {
+            return new HTMLWriter(localURL);
+        } else {
+            return null;
+        }
     }
 
     @Override
-    public String toString() {
-        return "<" + uri + ">";
+    public RDFWriter getWriter(String localURL) {
+        return new RDFXMLWriter();
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final URIRef other = (URIRef) obj;
-        if (this.uri != other.uri && (this.uri == null || !this.uri.equals(other.uri))) {
-            return false;
-        }
-        return true;
+    public String defaultMIMEType() {
+        return "application/rdf+xml";
     }
 
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 79 * hash + (this.uri != null ? this.uri.hashCode() : 0);
-        return hash;
-    }
-    
     
 }

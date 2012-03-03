@@ -40,9 +40,13 @@ import java.util.Set;
  */
 public class PrefixTool {
 
-    private final String validPrefixStartChar = "[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD";
-    private final String validPrefixChar = validPrefixStartChar + "\\-0-9\u00B7\u0300-\u036F\u203F-\u2040]";
-    private final String validPrefix = validPrefixStartChar + "]" + validPrefixChar + "*";
+    private static final String validPrefixStartChar = "[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD";
+    private static final String validPrefixChar = validPrefixStartChar + "\\-0-9\u00B7\u0300-\u036F\u203F-\u2040]";
+    public static final String validPrefix = validPrefixStartChar + "]" + validPrefixChar + "*";
+    /**
+     * To cover a minor technical issue with RDF/XML serialization, "ns" is not a valid namespace
+     */
+    public static final String RESERVED_NS = "ns";
     private final Map<String, String> prefix2full = new HashMap<String, String>();
     private final Map<String, String> full2prefix = new HashMap<String, String>();
 
@@ -72,7 +76,7 @@ public class PrefixTool {
                 final String prefix = uriStr.substring(pt2 + 1, pt);
                 final String full = uriStr.substring(0, pt);
 
-                if (!prefix2full.containsKey(prefix) && prefix.matches(validPrefix)) {
+                if (!prefix2full.containsKey(prefix) && prefix.matches(validPrefix) && !prefix.equals(RESERVED_NS)) {
                     prefix2full.put(prefix, full);
                     full2prefix.put(full, prefix);
                 }
@@ -105,7 +109,7 @@ public class PrefixTool {
         }
     }
 
-    private String[] split(URI uri) {
+    public String[] split(URI uri) {
         final String uriStr = uri.toString();
         for (String full : full2prefix.keySet()) {
             if (uriStr.startsWith(full)) {
@@ -118,8 +122,8 @@ public class PrefixTool {
         return new String[]{uriStr};
     }
 
-    private String toString(Resource resource) {
-        if (resource instanceof BNode) {
+    public String toString(Value resource) {
+        if (!(resource instanceof URIRef)) {
             return resource.toString();
         } else {
             final String[] s = split(((URIRef) resource).getURI());

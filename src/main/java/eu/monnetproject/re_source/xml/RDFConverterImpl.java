@@ -56,7 +56,7 @@ import org.xml.sax.helpers.DefaultHandler;
  * 
  * @author John McCrae
  */
-public class RDFConverter extends DefaultHandler {
+public class RDFConverterImpl extends DefaultHandler {
     private final SAXParser saxParser;
     private final InputSource source;
     private final URIRef headResource;
@@ -79,7 +79,7 @@ public class RDFConverter extends DefaultHandler {
      * @throws ParserConfigurationException If the XML parse is not properly configured
      * @throws SAXException If an error occurred in setting up the XML parser
      */
-    public RDFConverter(InputSource source, URI uri, String servletPrefix) throws ParserConfigurationException, SAXException {
+    public RDFConverterImpl(InputSource source, URI uri, String servletPrefix) throws ParserConfigurationException, SAXException {
         assert(uri.getFragment() == null);
         final SAXParserFactory factory = SAXParserFactory.newInstance();
         this.saxParser = factory.newSAXParser();

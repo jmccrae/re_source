@@ -31,7 +31,7 @@ package eu.monnetproject.re_source.rdf;
  * 
  * @author John McCrae
  */
-public class BNode extends Resource {
+public final class BNode extends Resource {
     private final String id;
     
    

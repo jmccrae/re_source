@@ -33,7 +33,7 @@ import java.net.URI;
  * 
  * @author John McCrae
  */
-public class Literal implements Value {
+public final class Literal extends Value {
     private final String value, language;
     private final URI datatype;
 

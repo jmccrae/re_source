@@ -27,9 +27,11 @@
 package eu.monnetproject.re_source.rdf;
 
 /**
- *
+ * A resource or literal in the RDF graph
+ * 
  * @author John McCrae
  */
-public interface Value {
-    
+public abstract class Value {
+    // Sealed class hierachy
+    Value() { }
 }

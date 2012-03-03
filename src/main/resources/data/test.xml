@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Lexicon>
+    <Entries>
+        <Entry lemma="cat"/>
+        <Entry lemma="dog"/>
+    </Entries>
+</Lexicon>

@@ -37,14 +37,11 @@ import java.util.Set;
  * 
  * @author John McCrae
  */
-public class Resource implements Value {
+public class Resource extends Value {
     protected final Map<URIRef,Set<Value>> triples = new HashMap<URIRef, Set<Value>>();
     
-    /**
-     * Create a URI ref
-     * @param uri The URI
-     */
-    protected Resource() {
+    // Do not create subclasses other than the one here
+    Resource() {
     }
     
     /**

@@ -33,6 +33,7 @@ import eu.monnetproject.re_source.rdf.URIRef;
 import eu.monnetproject.re_source.rdf.Value;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -52,23 +53,28 @@ public class TurtleWriter implements RDFWriter {
         }
         out.println("");
         
-        writeResource(headResource,out);
+        writeResource(headResource,out,prefixTool,new HashSet<Resource>());
         
         out.flush();
     }
-    
-    private void writeResource(Resource resource, PrintWriter out) {
+        
+    private void writeResource(Resource resource, PrintWriter out, PrefixTool prefixTool, Set<Resource> done) {
+        // Prevent closed loops
+        if(done.contains(resource))
+            return;
+        done.add(resource);
+        
         if(resource.getTriples().isEmpty())
             return;
-        out.print(resource.toString() + " ");
+        out.print(prefixTool.toString(resource) + " ");
         final Iterator<URIRef> propIter = resource.getTriples().keySet().iterator();
         while(propIter.hasNext()) {
             final URIRef prop = propIter.next();
-            out.print(prop.toString() + " ");
+            out.print(prefixTool.toString(prop) + " ");
             final Iterator<Value> valueIter = resource.getTriples().get(prop).iterator();
             while(valueIter.hasNext()) {
                 final Value value = valueIter.next();
-                out.print(value.toString());
+                out.print(prefixTool.toString(value));
                 if(valueIter.hasNext()) {
                     out.print(" ,\n\t\t");
                 } else if(propIter.hasNext()) {
@@ -83,12 +89,9 @@ public class TurtleWriter implements RDFWriter {
         for(Set<Value> values : resource.getTriples().values()) {
             for(Value value : values) {
                 if(value instanceof Resource) {
-                    writeResource((Resource)value,out);
+                    writeResource((Resource)value,out,prefixTool,done);
                 }
             }
         }
     }
-    
-    
-
 }

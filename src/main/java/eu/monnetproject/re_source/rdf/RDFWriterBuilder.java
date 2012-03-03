@@ -26,56 +26,31 @@
  *********************************************************************************/
 package eu.monnetproject.re_source.rdf;
 
-import java.net.URI;
-
 /**
- * A URI node in the RDF graph
- * 
+ *
  * @author John McCrae
  */
-public final class URIRef extends Resource {
-    
-    private final URI uri;
+public interface RDFWriterBuilder {
 
-    
-    URIRef(URI uri) {
-        this.uri = uri;
-    }
+    /**
+     * Create a writer
+     * @param mimeType The MIME type required
+     * @param localURL The local URL (some writers render links to other sites differently)
+     * @return The writer or null if no writer supports the given MIME type
+     */
+    RDFWriter getWriter(String mimeType, String localURL);
     
     /**
-     * Get the URI
-     * @return The URI or null if the resource is a blank node
+     * Create a writer for unspecified MIME type. This may be called after the 
+     * 2-arg getWriter returns null for all requested MIME types
+     * @param localURL The local URL (some writers render links to other sites differently)
+     * @return The writer or null if no writer supports the given MIME type
      */
-    public URI getURI() {
-        return uri;
-    }
-
-    @Override
-    public String toString() {
-        return "<" + uri + ">";
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final URIRef other = (URIRef) obj;
-        if (this.uri != other.uri && (this.uri == null || !this.uri.equals(other.uri))) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 79 * hash + (this.uri != null ? this.uri.hashCode() : 0);
-        return hash;
-    }
+    RDFWriter getWriter(String localURL);
     
-    
+    /**
+     * The MIME type of the default writer
+     * @return A MIME type
+     */
+    String defaultMIMEType();
 }

@@ -57,7 +57,7 @@ public class RDFConverterTest {
         System.out.println("toRDF");
         final InputSource inputSource = new InputSource(new StringReader(SAMPLE_DOC1));
         final URI uri = URI.create("http://example.com/servlet/doc1");
-        RDFConverter instance = new RDFConverter(inputSource, uri, "http://example.com/servlet");
+        RDFConverterImpl instance = new RDFConverterImpl(inputSource, uri, "http://example.com/servlet");
         Resource result = instance.toRDF();
         assertFalse(result.getTriples().isEmpty());
         new TurtleWriter().write(result, new OutputStreamWriter(System.out));
