@@ -53,20 +53,18 @@ public class PrefixTool {
     public PrefixTool() {
         prefix2full.put("rdf", RDF);
         prefix2full.put("rdfs", RDFS);
-        prefix2full.put("res", RES);
         prefix2full.put("owl", OWL);
         prefix2full.put("xsd", XSD);
 
         full2prefix.put(RDF, "rdf");
         full2prefix.put(RDFS, "rdfs");
-        full2prefix.put(RES, "res");
         full2prefix.put(OWL, "owl");
         full2prefix.put(XSD, "xsd");
     }
 
     public void add(URIRef ref) {
         final String uriStr = ref.getURI().toString();
-        int pt = uriStr.lastIndexOf(uriStr);
+        int pt = uriStr.lastIndexOf('#');
         if (pt < 0) {
             pt = uriStr.lastIndexOf('/');
         }
@@ -74,7 +72,7 @@ public class PrefixTool {
             int pt2 = uriStr.lastIndexOf("/", pt);
             if (pt2 > 0 && pt - pt2 - 1 > 0) {
                 final String prefix = uriStr.substring(pt2 + 1, pt);
-                final String full = uriStr.substring(0, pt);
+                final String full = uriStr.substring(0, pt+1);
 
                 if (!prefix2full.containsKey(prefix) && prefix.matches(validPrefix) && !prefix.equals(RESERVED_NS)) {
                     prefix2full.put(prefix, full);

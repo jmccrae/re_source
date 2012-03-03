@@ -28,9 +28,8 @@ package eu.monnetproject.re_source.servlet;
 
 import eu.monnetproject.re_source.Converter;
 import eu.monnetproject.re_source.SourceParseException;
-import eu.monnetproject.re_source.rdf.Resource;
+import eu.monnetproject.re_source.rdf.URIRef;
 import eu.monnetproject.re_source.xml.RDFConverterImpl;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -45,7 +44,7 @@ import org.xml.sax.SAXException;
 public class DefaultConverter implements Converter {
 
     @Override
-    public Resource convert(URL url, URI resourceUri, String servletPrefix) throws SourceParseException, IOException {
+    public URIRef convert(URL url, URI resourceUri, String servletPrefix) throws SourceParseException, IOException {
         if(url.getFile().endsWith(".xml")) {
             try {
                 return new RDFConverterImpl(new InputSource(url.openStream()), resourceUri, servletPrefix).toRDF();

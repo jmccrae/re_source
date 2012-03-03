@@ -30,7 +30,7 @@ import eu.monnetproject.re_source.Converter;
 import eu.monnetproject.re_source.SourceParseException;
 import eu.monnetproject.re_source.rdf.RDFWriter;
 import eu.monnetproject.re_source.rdf.RDFWriterBuilder;
-import eu.monnetproject.re_source.rdf.Resource;
+import eu.monnetproject.re_source.rdf.URIRef;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -56,13 +56,54 @@ public class Re_SourceServlet extends HttpServlet {
     private final List<Converter> converters = new LinkedList<Converter>();
     private final List<RDFWriterBuilder> writers = new LinkedList<RDFWriterBuilder>();
 
+    // Set of static variables set before the first call is handled
+    private static ServletConfig servletConfig;
+    private static String contextPath;
+    private static String servletPath;
+    private static String ontologyPath = "/ontology#";
+    private static String servletTitle = "The re_source example servlet";
+        
+    /**
+     * The path (from the context path) where the ontology servlet is deployed
+     */
     public static String ontologyPath() {
-        return "/ontology#";
+        return ontologyPath;
     }
 
+    /**
+     * The title of pages produced by this servlet
+     */
+    public static String servletTitle() {
+        return servletTitle;
+    }
+    
+    /**
+     * The URL where this application is deployed to
+     */
+    public static String contextPath() {
+        return contextPath;
+    }
+    
+    /**
+     * The URL where this particular servlet is deployed
+     */
+    public static String servletPath() {
+        return servletPath;
+    }
+        
+    public static String getProperty(String prop, String defaultValue) {
+        final String param = servletConfig.getInitParameter(prop);
+        if(param == null) {
+            return defaultValue;
+        } else {
+            return prop;
+        }
+    }
+    
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
+        servletConfig = config;
         final ServiceLoader<Converter> convs = ServiceLoader.load(Converter.class);
         for (Converter converter : convs) {
             converters.add(converter);
@@ -70,6 +111,12 @@ public class Re_SourceServlet extends HttpServlet {
         final ServiceLoader<RDFWriterBuilder> rwbs = ServiceLoader.load(RDFWriterBuilder.class);
         for (RDFWriterBuilder rwb : rwbs) {
             writers.add(rwb);
+        }
+        if(config.getInitParameter("ontology.path") != null) {
+            ontologyPath = config.getInitParameter("ontology.path");
+        }
+        if(config.getInitParameter("servlet.title") != null) {
+            servletTitle = config.getInitParameter("servlet.title");
         }
     }
 
@@ -80,16 +127,17 @@ public class Re_SourceServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
-        final URL resource = getClass().getResource("/data" + req.getPathInfo());
+        final URL resource = getServletContext().getResource("/WEB-INF/data" + req.getPathInfo());
         if (resource == null) {
             resp.sendError(HttpServletResponse.SC_NOT_FOUND);
         } else {
-            final String servletPath = getServletPath(req);
+            contextPath = getContextPath(req);
+            servletPath = getServletPath(req);
             final URI resourceURI = URI.create(servletPath + pathInfo);
             final List<String> accepts = getAccepts(req);
             for (Converter converter : converters) {
                 try {
-                    final Resource rdf = converter.convert(resource, resourceURI, servletPath);
+                    final URIRef rdf = converter.convert(resource, resourceURI, servletPath);
                     if (rdf != null) {
                         for (RDFWriterBuilder writerBuilder : writers) {
                             boolean acceptAll = false;
@@ -149,6 +197,11 @@ public class Re_SourceServlet extends HttpServlet {
         }
     }
 
+    private String getContextPath(HttpServletRequest req) {
+        return req.getScheme() + "://" + req.getServerName() + (req.getServerPort() != 80 ? ":" + req.getServerPort() : "")
+                + req.getContextPath();
+    }
+    
     private String getServletPath(HttpServletRequest req) {
         return req.getScheme() + "://" + req.getServerName() + (req.getServerPort() != 80 ? ":" + req.getServerPort() : "")
                 + req.getContextPath() + req.getServletPath();

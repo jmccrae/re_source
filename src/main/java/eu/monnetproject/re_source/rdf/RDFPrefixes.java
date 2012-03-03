@@ -40,5 +40,4 @@ public final class RDFPrefixes {
     public static final String RDFS= "http://www.w3.org/2000/01/rdf-schema#";
     public static final String OWL = "http://www.w3.org/2002/07/owl#";
     public static final String XSD = "http://www.w3.org/2001/XMLSchema#";
-    public static final String RES = "http://monnetproject.deri.ie/re_source#";
 }

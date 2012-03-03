@@ -44,7 +44,7 @@ import java.util.Set;
 public class TurtleWriter implements RDFWriter {
 
     @Override
-    public void write(Resource headResource, Writer out2) {
+    public void write(URIRef headResource, Writer out2) {
         final PrintWriter out = new PrintWriter(out2);
         final PrefixTool prefixTool = new PrefixTool();
         prefixTool.addRecursively(headResource);

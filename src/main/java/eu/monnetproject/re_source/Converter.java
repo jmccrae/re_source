@@ -26,7 +26,7 @@
  *********************************************************************************/
 package eu.monnetproject.re_source;
 
-import eu.monnetproject.re_source.rdf.Resource;
+import eu.monnetproject.re_source.rdf.URIRef;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -46,5 +46,5 @@ public interface Converter {
      * @throws IOException If the resource cannot be accessed
      * @return The conversion as a resource, or null if the converter does not support this type of resource
      */
-    Resource convert(URL url, URI resourceURI, String servletPrefix) throws SourceParseException, IOException;
+    URIRef convert(URL url, URI resourceURI, String servletPrefix) throws SourceParseException, IOException;
 }

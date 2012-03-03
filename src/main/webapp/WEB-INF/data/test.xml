@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Lexicon source="http://www.example.com/lexicon">
+    <Entries>
+        <Entry pos="np">cat</Entry>
+        <Entry pos="np" xml:lang="eng">dog</Entry>
+    </Entries>
+</Lexicon>

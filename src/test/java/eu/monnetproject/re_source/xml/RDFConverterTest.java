@@ -4,7 +4,7 @@
  */
 package eu.monnetproject.re_source.xml;
 
-import eu.monnetproject.re_source.rdf.Resource;
+import eu.monnetproject.re_source.rdf.URIRef;
 import eu.monnetproject.re_source.rdf.turtle.TurtleWriter;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
@@ -46,6 +46,7 @@ public class RDFConverterTest {
             + "<Lexicon>\n"
             + "\t<Entries>\n"
             + "\t\t<Entry value=\"cat\"/>\n"
+            + "\t\t<Entry value=\"dog\"/>\n"
             + "\t</Entries>\n"
             + "</Lexicon>";
 
@@ -58,7 +59,7 @@ public class RDFConverterTest {
         final InputSource inputSource = new InputSource(new StringReader(SAMPLE_DOC1));
         final URI uri = URI.create("http://example.com/servlet/doc1");
         RDFConverterImpl instance = new RDFConverterImpl(inputSource, uri, "http://example.com/servlet");
-        Resource result = instance.toRDF();
+        URIRef result = instance.toRDF();
         assertFalse(result.getTriples().isEmpty());
         new TurtleWriter().write(result, new OutputStreamWriter(System.out));
     }

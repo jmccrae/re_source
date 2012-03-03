@@ -1,0 +1,64 @@
+root { 
+    display: block;
+}
+
+/* How properties are displayed */
+a.property {
+    color:black;
+    text-decoration: none;
+    font-style: bold;
+}
+
+/* Links to external resources */
+a.uriref {
+    
+}
+
+/* At the start of a named resource */
+div.uriref {
+    margin-left: 10px;
+}
+
+/* At the start of a blank resource */
+div.bnode {
+    color:red;
+    margin-left: 10px;
+}
+
+/* A literal with a lanuage */
+span.langliteral {
+    color:orange;
+}
+
+/* A literal with a type */
+span.typedliteral {
+    color: chocolate;
+}
+
+/* An untyped literal */
+span.literal {
+    color:green;
+    font-style: italic;
+}
+
+/* Class for inserting text at the top of a document */
+.footer:after {
+    
+}
+
+/* Class for inserting text at the bottom of a document */
+.footer:before {
+    
+}
+
+/* Example of how to have "quotation marks" around the literal */
+span.literal:before {
+    content: '\201c';
+}
+
+
+span.literal:after {
+    content: '\201d';
+}
+
+

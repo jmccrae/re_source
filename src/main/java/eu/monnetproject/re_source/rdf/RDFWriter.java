@@ -39,5 +39,5 @@ public interface RDFWriter {
      * @param headResource The head resource
      * @param out The target
      */
-    void write(Resource headResource, Writer out);
+    void write(URIRef headResource, Writer out);
 }

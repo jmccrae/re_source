@@ -6,7 +6,7 @@
     </servlet>
     <servlet-mapping>
         <servlet-name>re_source</servlet-name>
-        <url-pattern>/*</url-pattern>
+        <url-pattern>/resource/*</url-pattern>
     </servlet-mapping>
     <session-config>
         <session-timeout>

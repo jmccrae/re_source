@@ -33,6 +33,7 @@ import eu.monnetproject.re_source.rdf.RDFWriter;
 import eu.monnetproject.re_source.rdf.Resource;
 import eu.monnetproject.re_source.rdf.URIRef;
 import eu.monnetproject.re_source.rdf.Value;
+import eu.monnetproject.re_source.servlet.Re_SourceServlet;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.HashSet;
@@ -56,7 +57,7 @@ public class HTMLWriter implements RDFWriter {
     }
 
     @Override
-    public void write(Resource headResource, Writer out2) {
+    public void write(URIRef headResource, Writer out2) {
         final PrintWriter out = new PrintWriter(out2);
         final PrefixTool prefixTool = new PrefixTool();
         prefixTool.addRecursively(headResource);
@@ -68,17 +69,20 @@ public class HTMLWriter implements RDFWriter {
             out.print(" xmlns:" + prefix + "=\"" + prefixTool.full(prefix) + "\"");
         }
         out.println(" version=\"XHTML+RDFa 1.0\">");
+        out.println("<link rel=\"stylesheet\" type=\"text/css\" href=\"" + Re_SourceServlet.contextPath() + Re_SourceServlet.getProperty("main.css", "/default.css") + "\" />");
         out.println("<head>");
-        out.println("<title>" + escapeXML(headResource.toString()) + "</title>");
+        out.println("<title>" + Re_SourceServlet.servletTitle() + "</title>");
         out.println("</head>");
+        out.println("<span class=\"header\"></span>");
         if (headResource instanceof URIRef) {
             out.println("<body about=\"" + ((URIRef) headResource).getURI().toString() + "\">");
         } else {
             out.println("<body>");
         }
 
-        writeResource(headResource, out, prefixTool, new HashSet<Resource>());
+        writeResource(headResource, null, out, prefixTool, new HashSet<Resource>());
 
+        out.println("<span class=\"footer\"></span>");
         out.println("</body>");
         out.println("</html>");
 
@@ -89,21 +93,24 @@ public class HTMLWriter implements RDFWriter {
         return str.replaceAll("\"", "&quot;").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("'", "&apos;");
     }
 
-    private void writeResource(Resource resource, PrintWriter out, PrefixTool prefixTool, Set<Resource> done) {
+    private void writeResource(URIRef headResource, Resource resource, PrintWriter out, PrefixTool prefixTool, Set<Resource> done) {
         // Prevent closed loops
-        if (done.contains(resource)) {
+        if (resource != null && done.contains(resource)) {
             return;
         }
         done.add(resource);
 
-        if (resource instanceof URIRef) {
+        if (resource != null && resource instanceof URIRef) {
             out.println("\t<div about=\"" + ((URIRef) resource).getURI().toString() + "\" class=\"uriref\">");
-        } else {
+        } else if (resource != null) {
             out.println("\t<div id=\"" + ((BNode) resource).getId() + "\" class=\"bnode\">");
         }
-        for (URIRef prop : resource.getTriples().keySet()) {
-            for (Value value : resource.getTriples().get(prop)) {
+        for (URIRef prop : (resource == null ? headResource : resource).getTriples().keySet()) {
 
+            for (Value value : (resource == null ? headResource : resource).getTriples().get(prop)) {
+                if (prop.getURI().toString().equals(Re_SourceServlet.contextPath() + "/property#index")) {
+                    continue;
+                }
                 final String[] ss = prefixTool.split(prop.getURI());
                 String rel;
                 if (ss.length == 2) {
@@ -112,30 +119,34 @@ public class HTMLWriter implements RDFWriter {
                     assert (ss.length == 1);
                     rel = ss[0];
                 }
+                String frag = prop.getURI().getFragment() == null ? rel : prop.getURI().getFragment();
+                out.println("\t\t<div property=\"" + rel + "\" class=\"property\"><a href=\"" + prop.getURI() + "\" class=\"property\">" + frag + "</a>");
+
                 if (value instanceof URIRef) {
                     final String uriStr = ((URIRef) value).getURI().toString();
                     if (!uriStr.startsWith(localPrefix)) {
-                        out.println("<a href=\"" + uriStr + "\" rel=\"" + rel + "\"/>");
+                        out.println("\t\t\t<a href=\"" + uriStr + "\" about=\"" + uriStr + " \" class=\"uriref\">" + uriStr +"</a>");
                         continue;
                     }
                 }
-                out.print("\t\t<span property=\"" + rel+"\"");
                 if (value instanceof Resource) {
-                    out.println(" class=\"property\">");
-                    writeResource((Resource) value, out, prefixTool, done);
-                    out.println("\t\t</span>");
+                    writeResource(headResource, (Resource) value, out, prefixTool, done);
                 } else {
                     final Literal literal = (Literal) value;
                     if (literal.getLanguage() != null) {
-                        out.println(" xml:lang=\"" + literal.getLanguage() + "\" class=\"langliteral\">" + escapeXML(literal.getValue()) + "</span>");
+                        out.println("\t\t\t<span xml:lang=\"" + literal.getLanguage() + "\" class=\"langliteral\">" + escapeXML(literal.getValue()) + "</span>");
                     } else if (literal.getDatatype() != null) {
-                        out.println(" rdf:datatype=\"" + literal.getDatatype().toString() + "\" class=\"typedliteral\">" + escapeXML(literal.getValue()) + "</span>");
+                        out.println("\t\t\t<span rdf:datatype=\"" + literal.getDatatype().toString() + "\" class=\"typedliteral\">" + escapeXML(literal.getValue()) + "</span>");
                     } else {
-                        out.println(" class=\"literal\">" + escapeXML(literal.getValue()) + "</span>");
+                        out.println("\t\t\t<span class=\"literal\">" + escapeXML(literal.getValue()) + "</span>");
                     }
                 }
+                out.println("\t\t</div>");
+
             }
         }
-        out.println("\t</div>");
+        if (resource != null) {
+            out.println("\t</div>");
+        }
     }
 }
