@@ -219,7 +219,7 @@ public class Re_SourceServlet extends HttpServlet {
     }
 
     private void welcomePage(HttpServletResponse resp) throws IOException {
-        listFilesPage(resp, DATA_PATH);
+        listFilesPage(resp, DATA_PATH+"/");
     }
 
     private void listFilesPage(HttpServletResponse resp, String rootPath) throws IOException {
@@ -237,7 +237,7 @@ public class Re_SourceServlet extends HttpServlet {
         out.println("</head>");
         out.println("<body>");
         for (String path : getServletContext().getResourcePaths(rootPath)) {
-            final String relativePath = path.substring(rootPath.length() + 1); // +1 to clip leading /
+            final String relativePath = path.substring(rootPath.length());
             out.println("<div class=\"resourcelink\"><a href=\"" + relativePath + "\">" + relativePath + "</a></div>");
         }
         out.println("</body>");
