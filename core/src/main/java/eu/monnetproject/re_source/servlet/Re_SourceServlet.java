@@ -178,6 +178,8 @@ public class Re_SourceServlet extends HttpServlet {
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         final String pathInfo = req.getPathInfo();
+        contextPath = getContextPath(req);
+        servletPath = getServletPath(req);
         if (pathInfo == null || pathInfo.equals("") || pathInfo.equals("/")) {
             welcomePage(req, resp);
         } else if (pathInfo.endsWith("/")) {
@@ -199,8 +201,7 @@ public class Re_SourceServlet extends HttpServlet {
 
     // return true if handled
     private boolean resource(HttpServletRequest req, final String pathInfo, final URL resource, HttpServletResponse resp) throws ServletException, IOException {
-        contextPath = getContextPath(req);
-        servletPath = getServletPath(req);
+        
         final URI resourceURI = URI.create(servletPath + pathInfo);
         final List<String> accepts = getAccepts(req);
         final boolean acceptAll = accepts.contains("*/*");
