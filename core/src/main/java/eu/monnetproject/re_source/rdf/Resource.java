@@ -33,7 +33,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * A resource in a RDF graph.
+ * A resource in a RDF graph. The resource also contains all triples that this 
+ * node is a subject of. This is used instead of a separate SPOC index as for a 
+ * linked data resource we wish only to return the description of the resource, 
+ * i.e, the set of triples from this node.
  * 
  * @author John McCrae
  */

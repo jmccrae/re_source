@@ -31,6 +31,8 @@ import eu.monnetproject.re_source.SourceParseException;
 import eu.monnetproject.re_source.rdf.RDFWriter;
 import eu.monnetproject.re_source.rdf.RDFWriterBuilder;
 import eu.monnetproject.re_source.rdf.URIRef;
+import static eu.monnetproject.re_source.util.ServletUtils.getContextPath;
+import static eu.monnetproject.re_source.util.ServletUtils.getServletPath;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -53,7 +55,26 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * The main servlet that handles all requests for resources.
+ * The main servlet that handles all requests for resources. Configuration can
+ * be done in the following manner:<br/>
+ *
+ * By Servlet Context Configuration:<br/>
+ *
+ * <ul> <li>ontology.path: The path where the ontology is published (default:
+ * /ontology#) <li>servlet.title: The title to show on all dynamic pages
+ * <li>main.css: The CSS file to use for HTML pages (default: /default.css)
+ * <li>legacy.mimetype: The MIME type for the legacy resource </ul>
+ *
+ * In addition new functional components may be include by means of the Java
+ * ServiceLoader (see this projects resources/META-INF/services for examples).
+ * This servlet obtains the following services
+ *
+ * <ul> <li>{@link Converter} for converting from legacy resources to RDF <li>{@link RDFWriter}
+ * for serializing RDF </ul>
+ *
+ * Finally, extra headers can be specified by creating a file in your JAR at the
+ * path /META-INF/extraheaders. This file is formatted as a Java properties
+ * file.
  *
  * @author John McCrae
  */
@@ -70,10 +91,11 @@ public class Re_SourceServlet extends HttpServlet {
     private final List<Converter> converters = new LinkedList<Converter>();
     private final List<RDFWriterBuilder> writers = new LinkedList<RDFWriterBuilder>();
     private final Map<String, String> extraHeaders = new HashMap<String, String>();
-    // Set of static variables set before the first call is handled
+    // Set of static variables set before the first request is handled
     private static ServletConfig servletConfig;
     private static String contextPath;
     private static String servletPath;
+    private static String legacyMIMEType;
     private static String ontologyPath = "/ontology#";
     private static String servletTitle = "The re_source example servlet";
 
@@ -105,6 +127,9 @@ public class Re_SourceServlet extends HttpServlet {
         return servletPath;
     }
 
+    /**
+     * Get a property from the servlet configuration
+     */
     public static String getProperty(String prop, String defaultValue) {
         final String param = servletConfig.getInitParameter(prop);
         if (param == null) {
@@ -132,6 +157,9 @@ public class Re_SourceServlet extends HttpServlet {
         if (config.getInitParameter("servlet.title") != null) {
             servletTitle = config.getInitParameter("servlet.title");
         }
+        if (config.getInitParameter("legacy.mimetype") != null) {
+            legacyMIMEType = config.getInitParameter("legacy.mimetype");
+        }
         try {
             final Enumeration<URL> extraHeaderResources = this.getClass().getClassLoader().getResources(EXTRA_HEADERS_FILE);
             while (extraHeaderResources.hasMoreElements()) {
@@ -151,15 +179,16 @@ public class Re_SourceServlet extends HttpServlet {
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         final String pathInfo = req.getPathInfo();
         if (pathInfo == null || pathInfo.equals("") || pathInfo.equals("/")) {
-            welcomePage(resp);
+            welcomePage(req, resp);
         } else if (pathInfo.endsWith("/")) {
-            listFilesPage(resp, DATA_PATH + pathInfo);
+            listFilesPage(req, resp, DATA_PATH + pathInfo);
         } else {
             final URL resource = getServletContext().getResource(DATA_PATH + req.getPathInfo());
             if (resource == null) {
                 notFound(resp);
             } else {
-                if (!resource(req, pathInfo, resource, resp)) {
+                boolean handledAsRDF = resource(req, pathInfo, resource, resp);
+                if (!handledAsRDF) {
                     // Could not convert, just copy the resource
                     resp.setStatus(HttpServletResponse.SC_OK);
                     copy(resource.openStream(), resp.getOutputStream());
@@ -168,80 +197,107 @@ public class Re_SourceServlet extends HttpServlet {
         }
     }
 
+    // return true if handled
     private boolean resource(HttpServletRequest req, final String pathInfo, final URL resource, HttpServletResponse resp) throws ServletException, IOException {
         contextPath = getContextPath(req);
         servletPath = getServletPath(req);
         final URI resourceURI = URI.create(servletPath + pathInfo);
         final List<String> accepts = getAccepts(req);
+        final boolean acceptAll = accepts.contains("*/*");
+        URIRef rdf = null;
+        RDFWriter writer = null;
+        String returnMimeType = null;
+        // First we attept to find a suitable writer for the MIME type
+        MIME_LOOP:
+        for (String mimeType : accepts) {
+            returnMimeType = mimeType;
+            if (legacyMIMEType != null && legacyMIMEType.equals(mimeType)) {
+                resp.setStatus(HttpServletResponse.SC_OK);
+                copy(resource.openStream(), resp.getOutputStream());
+                return true;
+            }
+            for (RDFWriterBuilder writerBuilder : writers) {
+                if (!mimeType.equals("*/*")) {
+                    writer = writerBuilder.getWriter(mimeType, servletPath);
+                    if (writer != null) {
+                        // Success
+                        break MIME_LOOP;
+                    }
+                }
+            }
+        }
+        // We did not find a writer but the client accepts everything
+        if (writer == null && acceptAll) {
+            // We use the first writer that will default (this is non-determinstic and should likely be fixed)
+            for (RDFWriterBuilder writerBuilder : writers) {
+                if (writerBuilder.defaultMIMEType() != null) {
+                    writer = writerBuilder.getWriter(servletPath);
+                    returnMimeType = writerBuilder.defaultMIMEType();
+                }
+            }
+            // Nope... none of the writers can default, we just fail
+            if (writer == null) {
+                return false;
+            }
+        } else if (writer == null) {
+            // This Http Error code indicates that the client made an impossible request
+            resp.sendError(HttpServletResponse.SC_NOT_ACCEPTABLE);
+            return true;
+        }
+        // Now we search for a converter
         for (Converter converter : converters) {
             try {
-                final URIRef rdf = converter.convert(resource, resourceURI, servletPath);
+                rdf = converter.convert(resource, resourceURI, servletPath);
                 if (rdf != null) {
-                    for (RDFWriterBuilder writerBuilder : writers) {
-                        boolean acceptAll = false;
-                        for (String mimeType : accepts) {
-                            if (mimeType.equals("*/*")) {
-                                acceptAll = true;
-                            } else {
-                                final RDFWriter writer = writerBuilder.getWriter(mimeType, servletPath);
-                                if (writer != null) {
-                                    resp.setContentType(mimeType);
-                                    resp.setStatus(HttpServletResponse.SC_OK);
-                                    writer.write(rdf, resp.getWriter());
-                                    return true;
-                                }
-                            }
-                        }
-                        if (accepts.isEmpty() || acceptAll) {
-                            final RDFWriter writer = writerBuilder.getWriter(servletPath);
-                            if (writer != null) {
-                                resp.setContentType(writerBuilder.defaultMIMEType());
-                                resp.setStatus(HttpServletResponse.SC_OK);
-                                writer.write(rdf, resp.getWriter());
-                                return true;
-                            }
-                        }
-                    }
-                    // We can make it RDF but the client requested a MIME type
-                    // that we cannot process
-                    resp.sendError(HttpServletResponse.SC_NOT_ACCEPTABLE);
-                    return true;
+                    break;
                 }
             } catch (SourceParseException x) {
                 throw new ServletException(x);
             }
         }
-        return false;
+        if (rdf == null) {
+            // Could not convert
+            return false;
+        } else {
+            // Finally we write the resource to the client
+            resp.setContentType(returnMimeType);
+            resp.setStatus(HttpServletResponse.SC_OK);
+            writer.write(rdf, resp.getWriter());
+            return true;
+        }
     }
 
     private void notFound(HttpServletResponse resp) throws IOException {
         resp.sendError(HttpServletResponse.SC_NOT_FOUND);
     }
 
-    private void welcomePage(HttpServletResponse resp) throws IOException {
-        listFilesPage(resp, DATA_PATH+"/");
+    private void welcomePage(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        listFilesPage(req, resp, DATA_PATH + "/");
     }
 
-    private void listFilesPage(HttpServletResponse resp, String rootPath) throws IOException {
-        resp.setContentType("application/xhtml+xml");
-        addExtraHeaders(resp);
-        final PrintWriter out = resp.getWriter();
-
-        out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"");
-        out.println("\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
-        out.println();
-        out.println("<html xmlns=\"http://www.w3.org/1999/xhtml\">");
-        out.println("<link rel=\"stylesheet\" type=\"text/css\" href=\"" + contextPath() + getProperty("main.css", "/default.css") + "\" />");
-        out.println("<head>");
-        out.println("<title>" + servletTitle() + "</title>");
-        out.println("</head>");
-        out.println("<body>");
-        for (String path : getServletContext().getResourcePaths(rootPath)) {
-            final String relativePath = path.substring(rootPath.length());
-            out.println("<div class=\"resourcelink\"><a href=\"" + relativePath + "\">" + relativePath + "</a></div>");
+    private void listFilesPage(HttpServletRequest req, HttpServletResponse resp, String rootPath) throws IOException {
+        for (String accept : getAccepts(req)) {
+            if (accept.equals("application/xhtml+xml") || accept.equals("text/html") || accept.equals("*/*")) {
+                resp.setContentType("application/xhtml+xml");
+                addExtraHeaders(resp);
+                resp.setStatus(HttpServletResponse.SC_OK);
+                FileLister.writeFileAsHTML(resp.getWriter(), rootPath, getServletContext());
+                return;
+            } else if (accept.equals("application/rdf+xml")) {
+                resp.setContentType("application/rdf+xml");
+                addExtraHeaders(resp);
+                resp.setStatus(HttpServletResponse.SC_OK);
+                FileLister.writeFileAsXMLRDF(resp.getWriter(), rootPath, getServletContext(), rootPath.substring(DATA_PATH.length()));
+                return;
+            } else if (accept.equals("text/turtle")) {
+                resp.setContentType("text/turtle");
+                addExtraHeaders(resp);
+                resp.setStatus(HttpServletResponse.SC_OK);
+                FileLister.writeFileAsTurtle(resp.getWriter(), rootPath, getServletContext(), rootPath.substring(DATA_PATH.length()));
+                return;
+            }
         }
-        out.println("</body>");
-        out.println("</html>");
+        resp.sendError(HttpServletResponse.SC_NOT_ACCEPTABLE);
     }
 
     private List<String> getAccepts(HttpServletRequest req) {
@@ -258,18 +314,11 @@ public class Re_SourceServlet extends HttpServlet {
                     accepts.add(acceptField);
                 }
             }
-            return accepts;
+            if (accepts.isEmpty()) {
+                return Collections.singletonList("*/*");
+            }
+            return Collections.unmodifiableList(accepts);
         }
-    }
-
-    private String getContextPath(HttpServletRequest req) {
-        return req.getScheme() + "://" + req.getServerName() + (req.getServerPort() != 80 ? ":" + req.getServerPort() : "")
-                + req.getContextPath();
-    }
-
-    private String getServletPath(HttpServletRequest req) {
-        return req.getScheme() + "://" + req.getServerName() + (req.getServerPort() != 80 ? ":" + req.getServerPort() : "")
-                + req.getContextPath() + req.getServletPath();
     }
 
     private void copy(InputStream is, OutputStream os) throws IOException {

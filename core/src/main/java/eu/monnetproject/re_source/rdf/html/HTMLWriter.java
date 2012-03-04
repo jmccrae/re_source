@@ -34,6 +34,8 @@ import eu.monnetproject.re_source.rdf.Resource;
 import eu.monnetproject.re_source.rdf.URIRef;
 import eu.monnetproject.re_source.rdf.Value;
 import eu.monnetproject.re_source.servlet.Re_SourceServlet;
+import eu.monnetproject.re_source.xml.XML2RDFConverter;
+import static eu.monnetproject.re_source.util.XMLUtils.escapeXML;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.HashSet;
@@ -61,6 +63,22 @@ public class HTMLWriter implements RDFWriter {
         final PrintWriter out = new PrintWriter(out2);
         final PrefixTool prefixTool = new PrefixTool();
         prefixTool.addRecursively(headResource);
+        writeHeader(out, prefixTool, headResource);
+
+        writeResource(headResource, null, out, prefixTool, new HashSet<Resource>());
+        
+        writeFooter(out);
+
+        out.flush();
+    }
+
+    private void writeFooter(final PrintWriter out) {
+        out.println("<span class=\"footer\"></span>");
+        out.println("</body>");
+        out.println("</html>");
+    }
+
+    private void writeHeader(final PrintWriter out, final PrefixTool prefixTool, URIRef headResource) {
         out.println("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"");
         out.println("\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">");
         out.println();
@@ -79,18 +97,6 @@ public class HTMLWriter implements RDFWriter {
         } else {
             out.println("<body>");
         }
-
-        writeResource(headResource, null, out, prefixTool, new HashSet<Resource>());
-
-        out.println("<span class=\"footer\"></span>");
-        out.println("</body>");
-        out.println("</html>");
-
-        out.flush();
-    }
-
-    private static String escapeXML(String str) {
-        return str.replaceAll("\"", "&quot;").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("'", "&apos;");
     }
 
     private void writeResource(URIRef headResource, Resource resource, PrintWriter out, PrefixTool prefixTool, Set<Resource> done) {
@@ -106,11 +112,12 @@ public class HTMLWriter implements RDFWriter {
             out.println("\t<div id=\"" + ((BNode) resource).getId() + "\" class=\"bnode\">");
         }
         for (URIRef prop : (resource == null ? headResource : resource).getTriples().keySet()) {
-
+            // We print the property for every triple (it looks better)
             for (Value value : (resource == null ? headResource : resource).getTriples().get(prop)) {
-                if (prop.getURI().toString().equals(Re_SourceServlet.contextPath() + "/property#index")) {
+                if (prop.getURI().toString().equals(XML2RDFConverter.indexProperty())) {
                     continue;
                 }
+                // Attempt to split the property into a nice URI
                 final String[] ss = prefixTool.split(prop.getURI());
                 String rel;
                 if (ss.length == 2) {
@@ -122,6 +129,7 @@ public class HTMLWriter implements RDFWriter {
                 String frag = prop.getURI().getFragment() == null ? rel : prop.getURI().getFragment();
                 out.println("\t\t<div property=\"" + rel + "\" class=\"property\"><a href=\"" + prop.getURI() + "\" class=\"property\">" + frag + "</a>");
 
+                // For links to external resources
                 if (value instanceof URIRef) {
                     final String uriStr = ((URIRef) value).getURI().toString();
                     if (!uriStr.startsWith(localPrefix)) {
@@ -129,6 +137,7 @@ public class HTMLWriter implements RDFWriter {
                         continue;
                     }
                 }
+                // Internal values
                 if (value instanceof Resource) {
                     writeResource(headResource, (Resource) value, out, prefixTool, done);
                 } else {

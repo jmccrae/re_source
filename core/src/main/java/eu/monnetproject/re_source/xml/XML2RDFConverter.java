@@ -55,7 +55,7 @@ import org.xml.sax.helpers.DefaultHandler;
  *
  * @author John McCrae
  */
-public class RDFConverterImpl extends DefaultHandler {
+public class XML2RDFConverter extends DefaultHandler {
 
     private final SAXParser saxParser;
     private final InputSource source;
@@ -79,7 +79,7 @@ public class RDFConverterImpl extends DefaultHandler {
      * configured
      * @throws SAXException If an error occurred in setting up the XML parser
      */
-    public RDFConverterImpl(InputSource source, URI uri, String servletPrefix) throws ParserConfigurationException, SAXException {
+    public XML2RDFConverter(InputSource source, URI uri, String servletPrefix) throws ParserConfigurationException, SAXException {
         assert (uri.getFragment() == null);
         final SAXParserFactory factory = SAXParserFactory.newInstance();
         this.saxParser = factory.newSAXParser();
@@ -125,7 +125,11 @@ public class RDFConverterImpl extends DefaultHandler {
 
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-        final String id = attributes.getValue("id") == null ? ("n" + nodeId++) : attributes.getValue("id");
+        String id = attributes.getValue("id") == null ? ("n" + nodeId++) : attributes.getValue("id");
+        while(usedIds.contains(id)) {
+            id = ("n" + nodeId++);
+        }
+        usedIds.add(id);
         final Resource resource = rdfFactory.newURIRef(URI.create(headResource.getURI().toString() + "#" + id));
         final URIRef property = rdfFactory.newURIRef(mkURI(uri, localName, qName));
         resources.peek().addTriple(property, resource);
@@ -153,11 +157,12 @@ public class RDFConverterImpl extends DefaultHandler {
             return;
         }
         if (language != null) {
-            resources.peek().addTriple(rdfFactory.newURIRef(URI.create(Re_SourceServlet.contextPath() + "/property#value")), rdfFactory.newLiteral(string, language));
+            resources.peek().addTriple(rdfFactory.newURIRef(URI.create(valueProperty())), rdfFactory.newLiteral(string, language));
         } else {
-            resources.peek().addTriple(rdfFactory.newURIRef(URI.create(Re_SourceServlet.contextPath() + "/property#value")), rdfFactory.newLiteral(string));
+            resources.peek().addTriple(rdfFactory.newURIRef(URI.create(valueProperty())), rdfFactory.newLiteral(string));
         }
     }
+
 
     /**
      * Get the document as RDF
@@ -177,5 +182,21 @@ public class RDFConverterImpl extends DefaultHandler {
         } catch (SAXException x) {
             throw new SourceParseException(x);
         }
+    }
+    
+    /**
+     * The property that indicates a literal value
+     * @return The property's URI as a String
+     */
+    public static String valueProperty() {
+        return Re_SourceServlet.contextPath() + "/property#value";
+    }
+    
+    /**
+     * The property that indicates the index (order) of an annotation
+     * @return The property's URI as a String
+     */
+    public static String indexProperty() {
+        return Re_SourceServlet.contextPath() + "/property#index";
     }
 }

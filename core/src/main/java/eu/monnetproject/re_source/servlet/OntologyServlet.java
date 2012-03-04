@@ -30,10 +30,10 @@ import eu.monnetproject.re_source.Converter;
 import eu.monnetproject.re_source.rdf.Resource;
 import eu.monnetproject.re_source.rdf.URIRef;
 import eu.monnetproject.re_source.rdf.Value;
+import static eu.monnetproject.re_source.util.ServletUtils.getServletPath;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
-import java.net.URL;
 import java.util.HashSet;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -43,7 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * This servlet produces a basic RDFS representation of a property
+ * This servlet produces a basic RDFS representation of all properties in the resource
  *
  * @author John McCrae
  */
@@ -56,6 +56,7 @@ public class OntologyServlet extends HttpServlet {
         final String pathInfo = req.getPathInfo();
         if (pathInfo == null || pathInfo.equals("") || pathInfo.equals("/")) {
             if (props == null) {
+                // We scan all files on first request for the ontology
                 buildProps(req);
             }
             resp.setContentType("application/rdf+xml");
@@ -76,13 +77,20 @@ public class OntologyServlet extends HttpServlet {
         final ServiceLoader<Converter> converters = ServiceLoader.load(Converter.class);
         final String servletPath = getServletPath(req);
         for (Converter converter : converters) {
-            for (String path : getServletContext().getResourcePaths(Re_SourceServlet.DATA_PATH)) {
-                System.err.println(path);
-                final URI resourceURI = URI.create(servletPath + path);
+            buildPropsForPath(servletPath, Re_SourceServlet.DATA_PATH, converter);
+        }
+    }
+
+    private void buildPropsForPath(final String servletPath, String path, Converter converter) {
+        for (String resourcePath : getServletContext().getResourcePaths(path)) {
+            if (resourcePath.endsWith("/")) {
+                buildPropsForPath(servletPath, resourcePath, converter);
+            } else {
+                final URI resourceURI = URI.create(servletPath + resourcePath);
                 try {
-                    final URIRef resource = converter.convert(getServletContext().getResource(path), resourceURI, servletPath);
+                    final URIRef resource = converter.convert(getServletContext().getResource(resourcePath), resourceURI, servletPath);
                     if (resource != null) {
-                        buildProps(resource, servletPath, new HashSet<Resource>());
+                        buildPropsFromRDF(resource, servletPath, new HashSet<Resource>());
                     }
                 } catch (Exception x) {
                     x.printStackTrace();
@@ -91,7 +99,8 @@ public class OntologyServlet extends HttpServlet {
         }
     }
 
-    private void buildProps(Resource resource, String servletPath, Set<Resource> done) {
+    private void buildPropsFromRDF(Resource resource, String servletPath, Set<Resource> done) {
+        // Loops are technically possible (but in practice should never happen)
         if (done.contains(resource)) {
             return;
         }
@@ -102,14 +111,9 @@ public class OntologyServlet extends HttpServlet {
             }
             for (Value value : resource.getTriples().get(prop)) {
                 if (value instanceof Resource) {
-                    buildProps((Resource)value,servletPath,done);
+                    buildPropsFromRDF((Resource) value, servletPath, done);
                 }
             }
         }
-    }
-
-    private String getServletPath(HttpServletRequest req) {
-        return req.getScheme() + "://" + req.getServerName() + (req.getServerPort() != 80 ? ":" + req.getServerPort() : "")
-                + req.getContextPath() + req.getServletPath();
     }
 }

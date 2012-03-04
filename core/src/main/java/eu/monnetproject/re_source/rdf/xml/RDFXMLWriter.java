@@ -33,6 +33,7 @@ import eu.monnetproject.re_source.rdf.RDFWriter;
 import eu.monnetproject.re_source.rdf.Resource;
 import eu.monnetproject.re_source.rdf.URIRef;
 import eu.monnetproject.re_source.rdf.Value;
+import static eu.monnetproject.re_source.util.XMLUtils.escapeXML;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.HashSet;
@@ -49,6 +50,20 @@ public class RDFXMLWriter implements RDFWriter {
     public void write(URIRef headResource, Writer out2) {
         final PrintWriter out = new PrintWriter(out2);
         final PrefixTool prefixTool = new PrefixTool();
+        writeHeader(prefixTool, headResource, out);
+
+        writeResource(headResource, out, prefixTool, new HashSet<Resource>());
+
+        writeFooter(out);
+        
+        out.flush();
+    }
+
+    private void writeFooter(final PrintWriter out) {
+        out.println("</rdf:RDF>");
+    }
+
+    private void writeHeader(final PrefixTool prefixTool, URIRef headResource, final PrintWriter out) {
         prefixTool.addRecursively(headResource);
         out.println("<?xml version=\"1.0\"?>");
         out.print("<rdf:RDF");
@@ -56,16 +71,6 @@ public class RDFXMLWriter implements RDFWriter {
             out.print(" xmlns:" + prefix + "=\"" + prefixTool.full(prefix) + "\"");
         }
         out.println(">");
-
-        writeResource(headResource, out, prefixTool, new HashSet<Resource>());
-
-        out.println("</rdf:RDF>");
-        
-        out.flush();
-    }
-
-    private static String escapeXML(String str) {
-        return str.replaceAll("\"", "&quot;").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("'", "&apos;");
     }
 
     private void writeResource(Resource resource, PrintWriter out, PrefixTool prefixTool, Set<Resource> done) {

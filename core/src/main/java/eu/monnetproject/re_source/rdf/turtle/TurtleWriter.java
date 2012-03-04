@@ -38,28 +38,33 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- *
+ * Writes a linked data resource in the Turtle format
+ * 
  * @author John McCrae
  */
 public class TurtleWriter implements RDFWriter {
 
     @Override
     public void write(URIRef headResource, Writer out2) {
-        final PrintWriter out = new PrintWriter(out2);
+        final PrintWriter out = new PrintWriter(out2);        
         final PrefixTool prefixTool = new PrefixTool();
-        prefixTool.addRecursively(headResource);
-        for(String prefix : prefixTool.getPrefixes()) {
-            out.println("@prefix " + prefix + ": <" + prefixTool.full(prefix)+ "> .");
-        }
-        out.println("");
+        writeHeader(prefixTool, headResource, out);
         
         writeResource(headResource,out,prefixTool,new HashSet<Resource>());
         
         out.flush();
     }
+
+    private void writeHeader(final PrefixTool prefixTool, URIRef headResource, final PrintWriter out) {
+        prefixTool.addRecursively(headResource);
+        for(String prefix : prefixTool.getPrefixes()) {
+            out.println("@prefix " + prefix + ": <" + prefixTool.full(prefix)+ "> .");
+        }
+        out.println("");
+    }
         
     private void writeResource(Resource resource, PrintWriter out, PrefixTool prefixTool, Set<Resource> done) {
-        // Prevent closed loops
+        // Prevent loops
         if(done.contains(resource))
             return;
         done.add(resource);
@@ -75,6 +80,7 @@ public class TurtleWriter implements RDFWriter {
             while(valueIter.hasNext()) {
                 final Value value = valueIter.next();
                 out.print(prefixTool.toString(value));
+                // Calculate continuation
                 if(valueIter.hasNext()) {
                     out.print(" ,\n\t\t");
                 } else if(propIter.hasNext()) {
@@ -86,6 +92,7 @@ public class TurtleWriter implements RDFWriter {
         }
         out.println();
         
+        // Recurse
         for(Set<Value> values : resource.getTriples().values()) {
             for(Value value : values) {
                 if(value instanceof Resource) {

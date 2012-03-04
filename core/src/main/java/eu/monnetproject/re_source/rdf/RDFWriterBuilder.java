@@ -44,13 +44,13 @@ public interface RDFWriterBuilder {
      * Create a writer for unspecified MIME type. This may be called after the 
      * 2-arg getWriter returns null for all requested MIME types
      * @param localURL The local URL (some writers render links to other sites differently)
-     * @return The writer or null if no writer supports the given MIME type
+     * @return The writer or null if this builder does not default
      */
     RDFWriter getWriter(String localURL);
     
     /**
      * The MIME type of the default writer
-     * @return A MIME type
+     * @return A MIME type or null if this builder cannot default
      */
     String defaultMIMEType();
 }

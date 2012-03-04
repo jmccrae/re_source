@@ -4,9 +4,16 @@
   <rdf:Property rdf:about="#index">
     <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
     <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DatatypeProperty"/>
+    <rdfs:label xml:lang="en">Indicates the order that a converted triple occurred relatively in the original document</rdfs:label>
   </rdf:Property>
 
   <rdf:Property rdf:about="#value">
     <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#DatatypeProperty"/>
+    <rdfs:label xml:lang="en">Indicates that a property was specified as a literal not an attribute</rdfs:label>
+  </rdf:Property>
+  
+  <rdf:Property rdf:about="#resource">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="en">Used on index pages, to indicate links to other resources</rdfs:label>
   </rdf:Property>
 </rdf:RDF>

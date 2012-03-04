@@ -29,7 +29,7 @@ package eu.monnetproject.re_source.servlet;
 import eu.monnetproject.re_source.Converter;
 import eu.monnetproject.re_source.SourceParseException;
 import eu.monnetproject.re_source.rdf.URIRef;
-import eu.monnetproject.re_source.xml.RDFConverterImpl;
+import eu.monnetproject.re_source.xml.XML2RDFConverter;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -38,7 +38,9 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /**
- *
+ * The default converter, accepts files ending with ".xml" and applies the default
+ * converter
+ * 
  * @author John McCrae
  */
 public class DefaultConverter implements Converter {
@@ -47,7 +49,7 @@ public class DefaultConverter implements Converter {
     public URIRef convert(URL url, URI resourceUri, String servletPrefix) throws SourceParseException, IOException {
         if(url.getFile().endsWith(".xml")) {
             try {
-                return new RDFConverterImpl(new InputSource(url.openStream()), resourceUri, servletPrefix).toRDF();
+                return new XML2RDFConverter(new InputSource(url.openStream()), resourceUri, servletPrefix).toRDF();
             } catch(ParserConfigurationException x) {
                 throw new RuntimeException(x);
             } catch(SAXException x) {
