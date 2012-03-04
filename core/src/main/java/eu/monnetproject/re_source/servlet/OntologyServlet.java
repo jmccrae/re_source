@@ -43,7 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * This servlet produces a basic OWL representation of a property
+ * This servlet produces a basic RDFS representation of a property
  *
  * @author John McCrae
  */
