@@ -14,3 +14,6 @@ Assuming your resource is an XML folder simply copy it to [core/src/main/webapp/
 
     WEB-INF/data/test.xml  -> http://myserver.com/context_root/resource/test.xml
 
+Now build your resource and copy the resulting WAR file at `target/re_source-version.war` to your Java Servlet Container (e.g., Tomcat or Glassfish) or you can run it as a standalone application with
+
+     mvn jetty:run
