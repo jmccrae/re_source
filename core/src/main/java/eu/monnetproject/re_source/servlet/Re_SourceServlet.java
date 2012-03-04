@@ -152,16 +152,18 @@ public class Re_SourceServlet extends HttpServlet {
         final String pathInfo = req.getPathInfo();
         if (pathInfo == null || pathInfo.equals("") || pathInfo.equals("/")) {
             welcomePage(resp);
-            return;
-        }
-        final URL resource = getServletContext().getResource(DATA_PATH + req.getPathInfo());
-        if (resource == null) {
-            notFound(resp);
+        } else if (pathInfo.endsWith("/")) {
+            listFilesPage(resp, DATA_PATH + pathInfo);
         } else {
-            if (!resource(req, pathInfo, resource, resp)) {
-                // Could not convert, just copy the resource
-                resp.setStatus(HttpServletResponse.SC_OK);
-                copy(resource.openStream(), resp.getOutputStream());
+            final URL resource = getServletContext().getResource(DATA_PATH + req.getPathInfo());
+            if (resource == null) {
+                notFound(resp);
+            } else {
+                if (!resource(req, pathInfo, resource, resp)) {
+                    // Could not convert, just copy the resource
+                    resp.setStatus(HttpServletResponse.SC_OK);
+                    copy(resource.openStream(), resp.getOutputStream());
+                }
             }
         }
     }
@@ -217,6 +219,10 @@ public class Re_SourceServlet extends HttpServlet {
     }
 
     private void welcomePage(HttpServletResponse resp) throws IOException {
+        listFilesPage(resp, DATA_PATH);
+    }
+
+    private void listFilesPage(HttpServletResponse resp, String rootPath) throws IOException {
         resp.setContentType("application/xhtml+xml");
         addExtraHeaders(resp);
         final PrintWriter out = resp.getWriter();
@@ -230,8 +236,8 @@ public class Re_SourceServlet extends HttpServlet {
         out.println("<title>" + servletTitle() + "</title>");
         out.println("</head>");
         out.println("<body>");
-        for (String path : getServletContext().getResourcePaths(DATA_PATH)) {
-            final String relativePath = path.substring(DATA_PATH.length()+1); // +1 to clip leading /
+        for (String path : getServletContext().getResourcePaths(rootPath)) {
+            final String relativePath = path.substring(rootPath.length() + 1); // +1 to clip leading /
             out.println("<div class=\"resourcelink\"><a href=\"" + relativePath + "\">" + relativePath + "</a></div>");
         }
         out.println("</body>");
@@ -276,7 +282,7 @@ public class Re_SourceServlet extends HttpServlet {
     }
 
     private void addExtraHeaders(HttpServletResponse resp) {
-        for(Map.Entry<String,String> entry : extraHeaders.entrySet()) {
+        for (Map.Entry<String, String> entry : extraHeaders.entrySet()) {
             resp.setHeader(entry.getKey(), entry.getValue());
         }
     }
