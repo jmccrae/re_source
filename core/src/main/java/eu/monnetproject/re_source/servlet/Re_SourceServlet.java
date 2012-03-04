@@ -202,11 +202,11 @@ public class Re_SourceServlet extends HttpServlet {
                             }
                         }
                     }
+                    // We can make it RDF but the client requested a MIME type
+                    // that we cannot process
+                    resp.sendError(HttpServletResponse.SC_NOT_ACCEPTABLE);
+                    return true;
                 }
-                // We can make it RDF but the client requested a MIME type
-                // that we cannot process
-                resp.sendError(HttpServletResponse.SC_NOT_ACCEPTABLE);
-                return true;
             } catch (SourceParseException x) {
                 throw new ServletException(x);
             }
